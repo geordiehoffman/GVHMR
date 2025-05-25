@@ -25,17 +25,17 @@ def get_batch(input_path, bbx_xys, img_ds=0.5, img_dst_size=256, path_type="vide
     gt_center = bbx_xys[:, :2]
     gt_bbx_size = bbx_xys[:, 2]
 
-    # Blur image to avoid aliasing artifacts
-    if True:
-        gt_bbx_size_ds = gt_bbx_size * img_ds
-        ds_factors = ((gt_bbx_size_ds * 1.0) / img_dst_size / 2.0).numpy()
-        imgs = np.stack(
-            [
-                # gaussian(v, sigma=(d - 1) / 2, channel_axis=2, preserve_range=True) if d > 1.1 else v
-                cv2.GaussianBlur(v, (5, 5), (d - 1) / 2) if d > 1.1 else v
-                for v, d in zip(imgs, ds_factors)
-            ]
-        )
+    # # Blur image to avoid aliasing artifacts
+    # if True:
+    #     gt_bbx_size_ds = gt_bbx_size * img_ds
+    #     ds_factors = ((gt_bbx_size_ds * 1.0) / img_dst_size / 2.0).numpy()
+    #     imgs = np.stack(
+    #         [
+    #             # gaussian(v, sigma=(d - 1) / 2, channel_axis=2, preserve_range=True) if d > 1.1 else v
+    #             cv2.GaussianBlur(v, (5, 5), (d - 1) / 2) if d > 1.1 else v
+    #             for v, d in zip(imgs, ds_factors)
+    #         ]
+    #     )
 
     # Output
     imgs_list = []
@@ -62,17 +62,25 @@ class Extractor:
         self.extractor: HMR2 = load_hmr2().cuda().eval()
         self.tqdm_leave = tqdm_leave
 
-    def extract_video_features(self, video_path, bbx_xys, img_ds=0.5):
+    def extract_video_features(self, input_path, bbx_xys, img_ds=0.5):
         """
         img_ds makes the image smaller, which is useful for faster processing
         """
-        # Get the batch
-        if isinstance(video_path, str):
-            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds)
+        # Determine the type of input
+        if isinstance(input_path, str):
+            # Infer from file extension
+            if input_path.lower().endswith((".jpg", ".jpeg", ".png")):
+                path_type = "image"
+            else:
+                path_type = "video"
+            imgs, bbx_xys = get_batch(input_path, bbx_xys, img_ds=img_ds, path_type=path_type)
+        elif isinstance(input_path, torch.Tensor):
+            imgs = input_path
+        elif isinstance(input_path, np.ndarray):
+            imgs, bbx_xys = get_batch(input_path, bbx_xys, img_ds=img_ds, path_type="np")
         else:
-            assert isinstance(video_path, torch.Tensor)
-            imgs = video_path
-
+            raise TypeError(f"Unsupported input type: {type(input_path)}")
+       
         # Inference
         F, _, H, W = imgs.shape  # (F, 3, H, W)
         imgs = imgs.cuda()
