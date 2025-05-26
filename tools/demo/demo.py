@@ -136,6 +136,8 @@ def run_preprocess(cfg):
     if not Path(paths.bbx).exists():
         tracker = Tracker()
         bbx_xyxy = tracker.get_one_track(video_path).float()  # (L, 4)
+        if bbx_xyxy.ndim == 1:
+          bbx_xyxy = bbx_xyxy.unsqueeze(0)  # make it (1, 4)
         bbx_xys = get_bbx_xys_from_xyxy(bbx_xyxy, base_enlarge=1.2).float()  # (L, 3) apply aspect ratio and enlarge
         torch.save({"bbx_xyxy": bbx_xyxy, "bbx_xys": bbx_xys}, paths.bbx)
         del tracker
@@ -151,7 +153,7 @@ def run_preprocess(cfg):
     # Get VitPose
     if not Path(paths.vitpose).exists():
         vitpose_extractor = VitPoseExtractor()
-        vitpose = vitpose_extractor.extract(video_path, bbx_xys)
+        vitpose = vitpose_extractor.extract(str(video_path), bbx_xys)
         torch.save(vitpose, paths.vitpose)
         del vitpose_extractor
     else:
@@ -165,7 +167,7 @@ def run_preprocess(cfg):
     # Get vit features
     if not Path(paths.vit_features).exists():
         extractor = Extractor()
-        vit_features = extractor.extract_video_features(video_path, bbx_xys)
+        vit_features = extractor.extract_video_features(str(video_path), bbx_xys)
         torch.save(vit_features, paths.vit_features)
         del extractor
     else:
