@@ -10,32 +10,32 @@ from hmr4d.network.hmr2.utils.preproc import crop_and_resize, IMAGE_MEAN, IMAGE_
 from tqdm import tqdm
 
 
-def get_batch(input_path, bbx_xys, img_ds=0.5, img_dst_size=256, path_type="video"):
+def get_batch(video_path, bbx_xys, img_ds=0.5, img_dst_size=256, path_type="video"):
     if path_type == "video":
-        imgs = read_video_np(input_path, scale=img_ds)
+        imgs = read_video_np(video_path, scale=img_ds)
     elif path_type == "image":
-        imgs = cv2.imread(str(input_path))[..., ::-1]
+        imgs = cv2.imread(str(video_path))[..., ::-1]
         imgs = cv2.resize(imgs, (0, 0), fx=img_ds, fy=img_ds)
         imgs = imgs[None]
     elif path_type == "np":
-        assert isinstance(input_path, np.ndarray)
+        assert isinstance(video_path, np.ndarray)
         assert img_ds == 1.0  # this is safe
-        imgs = input_path
+        imgs = video_path
 
     gt_center = bbx_xys[:, :2]
     gt_bbx_size = bbx_xys[:, 2]
 
-    # Blur image to avoid aliasing artifacts
-    if True:
-        gt_bbx_size_ds = gt_bbx_size * img_ds
-        ds_factors = ((gt_bbx_size_ds * 1.0) / img_dst_size / 2.0).numpy()
-        imgs = np.stack(
-            [
-                # gaussian(v, sigma=(d - 1) / 2, channel_axis=2, preserve_range=True) if d > 1.1 else v
-                cv2.GaussianBlur(v, (5, 5), (d - 1) / 2) if d > 1.1 else v
-                for v, d in zip(imgs, ds_factors)
-            ]
-        )
+    # # Blur image to avoid aliasing artifacts
+    # if True:
+    #     gt_bbx_size_ds = gt_bbx_size * img_ds
+    #     ds_factors = ((gt_bbx_size_ds * 1.0) / img_dst_size / 2.0).numpy()
+    #     imgs = np.stack(
+    #         [
+    #             # gaussian(v, sigma=(d - 1) / 2, channel_axis=2, preserve_range=True) if d > 1.1 else v
+    #             cv2.GaussianBlur(v, (5, 5), (d - 1) / 2) if d > 1.1 else v
+    #             for v, d in zip(imgs, ds_factors)
+    #         ]
+    #     )
 
     # Output
     imgs_list = []
@@ -66,13 +66,21 @@ class Extractor:
         """
         img_ds makes the image smaller, which is useful for faster processing
         """
-        # Get the batch
+        # Determine the type of input
         if isinstance(video_path, str):
-            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds)
-        else:
-            assert isinstance(video_path, torch.Tensor)
+            # Infer from file extension
+            if video_path.lower().endswith((".jpg", ".jpeg", ".png")):
+                path_type = "image"
+            else:
+                path_type = "video"
+            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds, path_type=path_type)
+        elif isinstance(video_path, torch.Tensor):
             imgs = video_path
-
+        elif isinstance(video_path, np.ndarray):
+            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds, path_type="np")
+        else:
+            raise TypeError(f"Unsupported input type: {type(video_path)}")
+       
         # Inference
         F, _, H, W = imgs.shape  # (F, 3, H, W)
         imgs = imgs.cuda()

@@ -19,14 +19,30 @@ class VitPoseExtractor:
         self.flip_test = True
         self.tqdm_leave = tqdm_leave
 
+    # @torch.no_grad()
+    # def extract(self, video_path, bbx_xys, img_ds=0.5):
+    #     # Get the batch
+    #     if isinstance(video_path, str):
+    #         imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds)
+    #     else:
+    #         assert isinstance(video_path, torch.Tensor)
+    #         imgs = video_path
+
     @torch.no_grad()
     def extract(self, video_path, bbx_xys, img_ds=0.5):
-        # Get the batch
+        # Handle video path, image path, tensor, or np.ndarray
         if isinstance(video_path, str):
-            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds)
-        else:
-            assert isinstance(video_path, torch.Tensor)
+            if video_path.lower().endswith((".jpg", ".jpeg", ".png")):
+                path_type = "image"
+            else:
+                path_type = "video"
+            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds, path_type=path_type)
+        elif isinstance(video_path, torch.Tensor):
             imgs = video_path
+        elif isinstance(video_path, np.ndarray):
+            imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds, path_type="np")
+        else:
+            raise TypeError(f"Unsupported input type: {type(video_path)}")
 
         # Inference
         L, _, H, W = imgs.shape  # (L, 3, H, W)
