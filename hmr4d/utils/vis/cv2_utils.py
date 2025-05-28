@@ -59,6 +59,7 @@ def draw_bbx_xyxy_on_image_batch(bbx_xyxy_batch, image_batch, mask=None, conf=No
     bbx_xyxy_batch = to_numpy(bbx_xyxy_batch)
     image_batch = to_numpy(image_batch)
     assert len(bbx_xyxy_batch) == len(image_batch)
+    print("Draw overlay input video shape:", image_batch.shape)
     image_batch_out = []
     for i in range(len(bbx_xyxy_batch)):
         if use_conf:
@@ -68,7 +69,9 @@ def draw_bbx_xyxy_on_image_batch(bbx_xyxy_batch, image_batch, mask=None, conf=No
                 image_batch_out.append(draw_bbx_xyxy_on_image(bbx_xyxy_batch[i], image_batch[i]))
             else:
                 image_batch_out.append(image_batch[i])
-    return image_batch_out
+    overlay = np.stack(image_batch_out)
+    print("Overlay result shape:", overlay.shape)
+    return overlay
 
 
 def draw_kpts(frame, keypoints, color=(0, 255, 0), thickness=2):
@@ -138,7 +141,10 @@ def draw_coco17_skeleton(img, keypoints, conf_thr=0):
 def draw_coco17_skeleton_batch(imgs, keypoints_batch, conf_thr=0):
     assert len(imgs) == len(keypoints_batch)
     keypoints_batch = to_numpy(keypoints_batch)
+    print("Draw overlay input video shape:", np.array(imgs).shape)
     imgs_out = []
     for i in range(len(imgs)):
         imgs_out.append(draw_coco17_skeleton(imgs[i], keypoints_batch[i], conf_thr))
-    return imgs_out
+    overlay = np.stack(imgs_out)
+    print("Overlay result shape:", overlay.shape)
+    return overlay

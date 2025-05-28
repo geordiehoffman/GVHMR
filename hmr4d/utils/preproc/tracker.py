@@ -81,6 +81,7 @@ class Tracker:
         track_id = id_sorted[0]
         frame_ids = torch.tensor(id_to_frame_ids[track_id])  # (N,)
         bbx_xyxys = torch.tensor(id_to_bbx_xyxys[track_id])  # (N, 4)
+        print("Tracker: bbx_xyxy shape:", bbx_xyxys.shape)
 
         # interpolate missing frames
         mask = frame_id_to_mask(frame_ids, get_video_lwh(video_path)[0])

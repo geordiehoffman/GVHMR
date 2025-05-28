@@ -108,7 +108,9 @@ def run_preprocess(cfg):
     if not Path(paths.bbx).exists():
         tracker = Tracker()
         bbx_xyxy = tracker.get_one_track(video_path).float()  # (L, 4)
+        print("Tracker: bbx_xyxy shape", bbx_xyxy.shape)  # Expect (F, 4)
         bbx_xys = get_bbx_xys_from_xyxy(bbx_xyxy, base_enlarge=1.2).float()  # (L, 3) apply aspect ratio and enlarge
+        print("Tracker: bbx_xys shape", bbx_xys.shape)    # Expect (F, 3)
         torch.save({"bbx_xyxy": bbx_xyxy, "bbx_xys": bbx_xys}, paths.bbx)
         del tracker
     else:
@@ -124,10 +126,12 @@ def run_preprocess(cfg):
     if not Path(paths.vitpose).exists():
         vitpose_extractor = VitPoseExtractor()
         vitpose = vitpose_extractor.extract(video_path, bbx_xys)
+        print("VitPose: shape", vitpose.shape)  # Expect (F, 17, 3)
         torch.save(vitpose, paths.vitpose)
         del vitpose_extractor
     else:
         vitpose = torch.load(paths.vitpose)
+        print("VitPose: shape", vitpose.shape)  # Expect (F, 17, 3)
         Log.info(f"[Preprocess] vitpose from {paths.vitpose}")
     if verbose:
         video = read_video_np(video_path)
@@ -138,10 +142,13 @@ def run_preprocess(cfg):
     if not Path(paths.vit_features).exists():
         extractor = Extractor()
         vit_features = extractor.extract_video_features(video_path, bbx_xys)
+        print("ViT Features shape", vit_features.shape)  # Expect something like (F, C)
         torch.save(vit_features, paths.vit_features)
         del extractor
     else:
         Log.info(f"[Preprocess] vit_features from {paths.vit_features}")
+        vit_features = torch.load(paths.vit_features)
+        print("ViT Features shape", vit_features.shape)  # Expect something like (F, C)
 
     # Get visual odometry results
     if not static_cam:  # use slam to get cam rotation
@@ -149,6 +156,7 @@ def run_preprocess(cfg):
             if not cfg.use_dpvo:
                 simple_vo = SimpleVO(cfg.video_path, scale=0.5, step=8, method="sift", f_mm=cfg.f_mm)
                 vo_results = simple_vo.compute()  # (L, 4, 4), numpy
+                print("SLAM/DPVO shape", vo_results.shape)
                 torch.save(vo_results, paths.slam)
             else:  # DPVO
                 from hmr4d.utils.preproc.slam import SLAMModel
@@ -165,12 +173,14 @@ def run_preprocess(cfg):
                     else:
                         break
                 slam_results = slam.process()  # (L, 7), numpy
+                print("SLAM/DPVO shape", slam_results.shape)
                 torch.save(slam_results, paths.slam)
         else:
             Log.info(f"[Preprocess] slam results from {paths.slam}")
+            slam_data = torch.load(paths.slam)
+            print("SLAM/DPVO shape", slam_data.shape)
 
     Log.info(f"[Preprocess] End. Time elapsed: {Log.time()-tic:.2f}s")
-
 
 def load_data_dict(cfg):
     paths = cfg.paths
@@ -197,6 +207,12 @@ def load_data_dict(cfg):
         "cam_angvel": compute_cam_angvel(R_w2c),
         "f_imgseq": torch.load(paths.vit_features),
     }
+    print("Data dict loaded:")
+    print(" - bbx_xys:", data["bbx_xys"].shape)
+    print(" - kp2d:", data["kp2d"].shape)
+    print(" - K_fullimg:", data["K_fullimg"].shape)
+    print(" - cam_angvel:", data["cam_angvel"].shape)
+    print(" - f_imgseq:", data["f_imgseq"].shape)
     return data
 
 

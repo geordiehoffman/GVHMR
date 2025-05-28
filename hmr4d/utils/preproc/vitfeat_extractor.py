@@ -86,4 +86,5 @@ class Extractor:
                 features.append(feature.detach().cpu())
 
         features = torch.cat(features, dim=0).clone()  # (F, 1024)
+        print("ViT Features: feature tensor shape:", features.shape)
         return features

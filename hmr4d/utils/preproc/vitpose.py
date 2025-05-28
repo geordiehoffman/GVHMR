@@ -69,6 +69,7 @@ class VitPoseExtractor:
             vitpose.append(kp2d.detach().cpu().clone())
 
         vitpose = torch.cat(vitpose, dim=0).clone()  # (F, 17, 3)
+        print("VitPose: keypoints shape:", vitpose.shape)
         return vitpose
 
 

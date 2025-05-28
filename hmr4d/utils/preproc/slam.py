@@ -64,7 +64,9 @@ class SLAMModel(object):
             self.slam.update()
 
         self.reader.join()
-        return self.slam.terminate()[0]
+        vo_results = self.slam.terminate()[0]
+        print("VO: trajectory shape:", vo_results.shape)
+        return vo_results
 
 
 def video_stream(queue, imagedir, intrinsics, stride, skip=0, resize=0.5):

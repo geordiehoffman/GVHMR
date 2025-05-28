@@ -25,6 +25,11 @@ class DemoPL(pl.LightningModule):
         }
 
         """
+        # Print input shapes
+        print("Predict input bbx_xys:", data["bbx_xys"].shape)
+        print("Predict input kp2d:", data["kp2d"].shape)
+        print("Predict input f_imgseq:", data["f_imgseq"].shape)
+
         # ROPE inference
         batch = {
             "length": data["length"][None],
@@ -43,6 +48,10 @@ class DemoPL(pl.LightningModule):
             "K_fullimg": data["K_fullimg"],
             "net_outputs": outputs,  # intermediate outputs
         }
+
+        # Print output shape example
+        print("Predict output global_orient:", pred["smpl_params_incam"]["global_orient"].shape)
+
         return pred
 
     def load_pretrained_model(self, ckpt_path):
