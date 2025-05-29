@@ -19,14 +19,6 @@ class VitPoseExtractor:
         self.flip_test = True
         self.tqdm_leave = tqdm_leave
 
-    # @torch.no_grad()
-    # def extract(self, video_path, bbx_xys, img_ds=0.5):
-    #     # Get the batch
-    #     if isinstance(video_path, str):
-    #         imgs, bbx_xys = get_batch(video_path, bbx_xys, img_ds=img_ds)
-    #     else:
-    #         assert isinstance(video_path, torch.Tensor)
-    #         imgs = video_path
 
     @torch.no_grad()
     def extract(self, video_path, bbx_xys, img_ds=0.5):

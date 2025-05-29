@@ -199,12 +199,16 @@ def load_data_dict(cfg):
     else:
         K_fullimg = estimate_K(width, height).repeat(length, 1, 1)
 
+    cam_angvel = compute_cam_angvel(R_w2c)
+    if cam_angvel.shape[0] == 0:
+        cam_angvel = torch.zeros(length, 6)
+
     data = {
         "length": torch.tensor(length),
         "bbx_xys": torch.load(paths.bbx)["bbx_xys"],
         "kp2d": torch.load(paths.vitpose),
         "K_fullimg": K_fullimg,
-        "cam_angvel": compute_cam_angvel(R_w2c),
+        "cam_angvel": cam_angvel,
         "f_imgseq": torch.load(paths.vit_features),
     }
     print("Data dict loaded:")
